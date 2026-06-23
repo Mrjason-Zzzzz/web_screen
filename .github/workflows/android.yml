@@ -18,29 +18,37 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
 
-    # 2. 【终极对齐】开辟纯净沙箱，并强行物理复制系统预设的合法签署许可证
-    - name: Isolate Android SDK & Sync Accepted Licenses
+    # 2. 【核心绝杀点】彻底物理清除、清洗虚拟机内部带毒的现代 NDK 环境，强行破除工具链断层
+    # 隔离 SDK 处女地，确保没有任何高版本垃圾能潜伏进来
+    private-environment-purge:
+    - name: Isolate SDK & Purge Toxic NDK Environment
       run: |
         mkdir -p ${{ github.workspace }}/clean-sdk
         
-        # 核心绝杀：如果系统预设的执照目录存在，物理克隆到沙箱中，瞬间合法化环境
+        # 暴力移除系统全局预装的畸形 NDK 资产，防止老旧编译器误入歧区
+        sudo rm -rf /usr/local/lib/android/sdk/ndk
+        sudo rm -rf /usr/local/lib/android/sdk/ndk-bundle
+        
+        # 物理克隆系统预设的合法签署许可证到纯净沙箱
         if [ -d "/usr/local/lib/android/sdk/licenses" ]; then
           cp -r /usr/local/lib/android/sdk/licenses ${{ github.workspace }}/clean-sdk/
         fi
         
-        # 死锁沙箱路径指针
+        # 死锁沙箱路径指针，同时将引发断代猝死的 NDK 环境变量强行彻底置空抹平
         echo "sdk.dir=${{ github.workspace }}/clean-sdk" > local.properties
         echo "ANDROID_HOME=${{ github.workspace }}/clean-sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=" >> $GITHUB_ENV
+        echo "ANDROID_NDK_ROOT=" >> $GITHUB_ENV
 
     # 3. 自动赋予原作者的编译脚本最高执行权限
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # 4. 在绝对合规、纯净的沙箱世界中执行打包任务
+    # 4. 在没有 NDK 工具链污染的纯净世界中，执行原项目标准的打包任务
     - name: Build with Gradle
       run: ./gradlew assembleDebug
 
-    # 5. 模糊匹配全量抓取生成的 APK
+    # 5. 模糊匹配全量抓取最终生成的原生基准 APK
     - name: Upload APK
       uses: actions/upload-artifact@v5
       with:
