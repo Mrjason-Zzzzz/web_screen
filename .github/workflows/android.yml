@@ -18,11 +18,17 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
 
-    # 2. ◄◄◄ 【核心绝杀点】强行截断全局受污染的 SDK，在工作区内动态开辟一块绝对纯净的专属隔离沙箱
-    # 强行通过 local.properties 锁死代理，迫使老编译器在干净的世界里点火
-    - name: Isolate Android SDK Environment
+    # 2. 【终极对齐】开辟纯净沙箱，并强行物理复制系统预设的合法签署许可证
+    - name: Isolate Android SDK & Sync Accepted Licenses
       run: |
         mkdir -p ${{ github.workspace }}/clean-sdk
+        
+        # 核心绝杀：如果系统预设的执照目录存在，物理克隆到沙箱中，瞬间合法化环境
+        if [ -d "/usr/local/lib/android/sdk/licenses" ]; then
+          cp -r /usr/local/lib/android/sdk/licenses ${{ github.workspace }}/clean-sdk/
+        fi
+        
+        # 死锁沙箱路径指针
         echo "sdk.dir=${{ github.workspace }}/clean-sdk" > local.properties
         echo "ANDROID_HOME=${{ github.workspace }}/clean-sdk" >> $GITHUB_ENV
 
@@ -30,11 +36,11 @@ jobs:
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # 4. 执行原项目标准的打包任务（此时沙箱会自发向谷歌官方按需下载纯净的 API 29 与 29.0.3 工具包）
+    # 4. 在绝对合规、纯净的沙箱世界中执行打包任务
     - name: Build with Gradle
       run: ./gradlew assembleDebug
 
-    # 5. 模糊匹配抓取原作者编译出来的全部 APK
+    # 5. 模糊匹配全量抓取生成的 APK
     - name: Upload APK
       uses: actions/upload-artifact@v5
       with:
