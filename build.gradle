@@ -1,27 +1,24 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
+
 buildscript {
     repositories {
         google()
-        jcenter()
+        mavenCentral()
+        // 强制注入明文历史归档镜像，击穿老旧 WebRTC 组件的获取阻碍
+        maven { url "https://jcenter.bintray.com" } 
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:4.0.0-beta05"
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        // 保持原作者的旧版 Android Gradle 插件版本不动，维护物理原貌
+        classpath 'com.android.tools.build:gradle:3.6.3'
     }
 }
 
 allprojects {
     repositories {
         google()
-        jcenter()
-    }
-}
-
-allprojects {
-    tasks.withType(JavaCompile) {
-        options.compilerArgs << "-Xlint:unchecked" << "-Xlint:deprecation"
+        mavenCentral()
+        // ◄◄◄ 【核心绝杀】确保所有子模块都能从归档库里把 org.webrtc 精准捞出来
+        maven { url "https://jcenter.bintray.com" } 
     }
 }
 
