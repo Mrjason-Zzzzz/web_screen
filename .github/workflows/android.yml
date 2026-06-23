@@ -11,22 +11,30 @@ jobs:
     steps:
     - uses: actions/checkout@v5
 
-    # ◄◄◄ 【核心纠偏】将 JDK 版本由错位的 17 降维对齐到老项目法定的 11
+    # 1. 锁死兼容历史代差的 JDK 11
     - name: set up JDK 11
       uses: actions/setup-java@v5
       with:
         java-version: '11'
         distribution: 'temurin'
 
-    # 自动赋予原作者的编译脚本最高执行权限，防止物理锁死
+    # 2. ◄◄◄ 【核心绝杀点】强行截断全局受污染的 SDK，在工作区内动态开辟一块绝对纯净的专属隔离沙箱
+    # 强行通过 local.properties 锁死代理，迫使老编译器在干净的世界里点火
+    - name: Isolate Android SDK Environment
+      run: |
+        mkdir -p ${{ github.workspace }}/clean-sdk
+        echo "sdk.dir=${{ github.workspace }}/clean-sdk" > local.properties
+        echo "ANDROID_HOME=${{ github.workspace }}/clean-sdk" >> $GITHUB_ENV
+
+    # 3. 自动赋予原作者的编译脚本最高执行权限
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
-    # 执行原项目标准的打包任务
+    # 4. 执行原项目标准的打包任务（此时沙箱会自发向谷歌官方按需下载纯净的 API 29 与 29.0.3 工具包）
     - name: Build with Gradle
       run: ./gradlew assembleDebug
 
-    # 模糊匹配抓取原作者编译出来的全部 APK
+    # 5. 模糊匹配抓取原作者编译出来的全部 APK
     - name: Upload APK
       uses: actions/upload-artifact@v5
       with:
